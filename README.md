@@ -1,11 +1,12 @@
 # Firestore Browser
 
 1. Put your Firebase creds in files named `env.{environment_name}.json`, e.g. `env.dev.json`.
-2.a. Go to `/?env={environment_name}&path={firestore_path}`, e.g. `/?env=dev&path=/authors/Vonnegut/books/Cats Cradle/reviews/`
-2.b. Open your browser console to watch for errors.
-3. Log in when prompted, if necessary.
-4. The data at that path will be output on the right.
-4. Type JSON input on the left, then hit `Option + Enter` to push it to Firestore. Collections must be arrays, docs must be objects/dicts.
+1. Serve `index.html`. (I use `npm i -g http-server`)
+1. Go to `index.html/?env={environment_name}&path={firestore_path}`, e.g. `/?env=dev&path=/authors/Vonnegut/books/Cats Cradle/reviews/`
+1. Open your browser console to watch for errors.
+1. Log in when prompted, if necessary.
+1. The data at that path will be output on the right.
+1. Type JSON input on the left, then hit `Option + Enter` to push it to Firestore. Collections must be arrays, docs must be objects/dicts.
 
 ## Notes:
 
