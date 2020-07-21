@@ -78,9 +78,14 @@
 
     function parseDoc(doc) {
       return {
-        id: doc.id,
+        __firestore_id: doc.id,
         ...doc.data()
       }
+    }
+
+    function prepareDoc(doc) {
+      const { __firestore_id, ...docWithoutId } = doc;
+      return docWithoutId;
     }
 
     function onInput(event) {
@@ -111,11 +116,12 @@
         await Promise.all(baseData.docs.map(doc => {
           doc.ref.delete();
         }));
-        await Promise.all(payload.map(doc => baseRef.add(doc)));
+        await Promise.all(payload.map(doc => baseRef.add(prepareDoc(doc))));
       } else {
         if (Array.isArray(payload)) {
           console.log('Must be an object.');
         }
+        await baseData.ref.set(prepareDoc(payload));
       }
     }
   });
