@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firestore</title>
+    <script src="https://www.gstatic.com/firebasejs/7.14.4/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.4/firebase-firestore.js"></script>
+    <script>
+  function qs(paramName) {
+    return (location.href.match(new RegExp(`${paramName}=(.*?)(&|#|$)`)) || [])[1];
+  }
+
+  let config;
+  const awaitConfig = new Promise(async (resolve) => {
+    const env = qs('env');
+    const configResponse = await fetch(`./env.${env}.json`);
+    if (configResponse.status >= 400) {
+      throw new Error('No config by that name. :(');
+    }
+    config = await configResponse.json();
+    firebase.initializeApp(config);
+    resolve();
+  });
+
+  const awaitDomLoaded = new Promise(resolve => {
+    document.addEventListener('DOMContentLoaded', resolve);
+  });
+
+  const authProvider = new firebase.auth.GoogleAuthProvider();
+  let authToken = localStorage.getItem('authToken');
+  const awaitLoggedIn = new Promise(resolve => {
+    if (authToken) {
+      resolve();
+      return;
+    }
+
+    firebase.auth().signInWithPopup(authProvider).then(result => {
+      authToken = result.credential.accessToken;
+      localStorage.setItem('authToken', authToken);
+      resolve();
+    });
+  });
+
+  Promise.all([
+    awaitConfig,
+    awaitDomLoaded,
+    awaitLoggedIn,
+  ]).then(async () => {
+    const path = qs('path');
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+
+    let baseType;
+    let baseRef;
+    let baseData;
+
+    input.addEventListener('keypress', onInput);
+    
+    const firestore = firebase.firestore();
+    try {
+      baseRef = firestore.collection(path);
+      baseType = 'collection';
+      baseData = await baseRef.get();
+      baseRef.onSnapshot(snapshot => {
+        baseData = snapshot;
+        setOutput(snapshot.docs.map(parseDoc));
+      });
+    } catch(e) {
+      baseRef = firestore.doc(path);
+      baseType = 'doc';
+      baseRef.onSnapshot(snapshot => {
+        baseData = snapshot;
+        setOutput(parseDoc(snapshot));
+      });
+    }
+    
+
+    function parseDoc(doc) {
+      return {
+        id: doc.id,
+        ...doc.data()
+      }
+    }
+
+    function onInput(event) {
+      if (event.key === 'Enter' && event.altKey) {
+        event.preventDefault();
+        postInput();
+      }
+    }
+
+    function setOutput(data) {
+      window.results = data;
+      output.value = JSON.stringify(data, null, '  ');
+    }
+
+    async function postInput() {
+      const data = input.value;
+      let payload;
+      try {
+        payload = JSON.parse(data);
+      } catch(e) {
+        console.log('Bad JSON. :(');
+        return;
+      }
+      if (baseType === 'collection') {
+        if (!Array.isArray(payload)) {
+          console.log('Must be an array.');
+        }
+        await Promise.all(baseData.docs.map(doc => {
+          doc.ref.delete();
+        }));
+        await Promise.all(payload.map(doc => baseRef.add(doc)));
+      } else {
+        if (Array.isArray(payload)) {
+          console.log('Must be an object.');
+        }
+      }
+    }
+  });
+    </script>
+    <style>
+  * {
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+  *:focus {
+    outline: 0;
+  }
+  .wrapper {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+  }
+  textarea {
+    background: #fff;
+    color: #000;
+    font-family: monospace;
+    outline: 1px solid #ddd;
+    padding: 10px;
+    white-space: pre-wrap;
+  }
+  #output {
+    flex-grow: 1;
+  }
+  @media (max-width: 700px) {
+    .wrapper {
+      flex-direction: column;
+    }
+    textarea {
+      height: 50%;
+    }
+    textarea#input {
+      resize: vertical;
+    }
+  }
+  @media (min-width: 701px) {
+    .wrapper {
+      flex-direction: row;
+    }
+    textarea {
+      width: 50%;
+    }
+    textarea#input {
+      resize: horizontal;
+    }
+  }
+    </style>
+  </head>
+  <body class="wrapper">
+    <textarea id="input"></textarea>
+    <textarea id="output" disabled></textarea>
+  </body>
+</html>
