@@ -48,6 +48,7 @@
     awaitLoggedIn,
   ]).then(async () => {
     const path = qs('path');
+    const errors = document.getElementById('errors');
     const input = document.getElementById('input');
     const output = document.getElementById('output');
 
@@ -89,10 +90,15 @@
     }
 
     function onInput(event) {
+      setError('');
       if (event.key === 'Enter' && event.altKey) {
         event.preventDefault();
         postInput();
       }
+    }
+
+    function setError(message) {
+      errors.innerHTML = message;
     }
 
     function setOutput(data) {
@@ -106,12 +112,12 @@
       try {
         payload = JSON.parse(data);
       } catch(e) {
-        console.log('Bad JSON. :(');
+        setError('Bad JSON. :(');
         return;
       }
       if (baseType === 'collection') {
         if (!Array.isArray(payload)) {
-          console.log('Must be an array.');
+          setError('Must be an array.');
         }
         await Promise.all(baseData.docs.map(doc => {
           doc.ref.delete();
@@ -119,7 +125,7 @@
         await Promise.all(payload.map(doc => baseRef.add(prepareDoc(doc))));
       } else {
         if (Array.isArray(payload)) {
-          console.log('Must be an object.');
+          setError('Must be an object.');
         }
         await baseData.ref.set(prepareDoc(payload));
       }
@@ -138,7 +144,19 @@
   .wrapper {
     display: flex;
     height: 100vh;
+    position: relative;
     width: 100%;
+  }
+  #errors {
+    background-color: rgba(255, 255, 255, 0.9);
+    top: 0;
+    color: red;
+    font-weight: bold;
+    padding: 10px;
+    position: fixed;
+  }
+  #errors:empty {
+    display: none;
   }
   textarea {
     background: #fff;
@@ -161,6 +179,9 @@
     textarea#input {
       resize: vertical;
     }
+    #errors {
+      right: 0;
+    }
   }
   @media (min-width: 701px) {
     .wrapper {
@@ -172,11 +193,15 @@
     textarea#input {
       resize: horizontal;
     }
+    #errors {
+      right: 50%;
+    }
   }
     </style>
   </head>
   <body class="wrapper">
-    <textarea id="input" spellcheck="false"></textarea>
+    <textarea id="input" spellcheck="false" placeholder="Enter JSON here, then hit 'Option + Enter' to push it to the Firestore path."></textarea>
     <textarea id="output" disabled></textarea>
+    <p id="errors"></p>
   </body>
 </html>
