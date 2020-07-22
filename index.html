@@ -64,6 +64,7 @@
       }
     });
     input.addEventListener('input', () => {
+      setError('');
       localStorage.setItem('input', input.value);
     });
     
