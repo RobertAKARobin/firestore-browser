@@ -56,7 +56,17 @@
     let baseRef;
     let baseData;
 
-    input.addEventListener('keypress', onInput);
+    input.value = localStorage.getItem('input');
+    input.addEventListener('keypress', event => {
+      if (event.key === 'Enter' && event.altKey) {
+        event.preventDefault();
+        postInput();
+      }
+    });
+    input.addEventListener('input', () => {
+      localStorage.setItem('input', input.value);
+    });
+    
     
     const firestore = firebase.firestore();
     try {
@@ -87,14 +97,6 @@
     function prepareDoc(doc) {
       const { __firestore_id, ...docWithoutId } = doc;
       return docWithoutId;
-    }
-
-    function onInput(event) {
-      setError('');
-      if (event.key === 'Enter' && event.altKey) {
-        event.preventDefault();
-        postInput();
-      }
     }
 
     function setError(message) {
