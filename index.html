@@ -71,6 +71,10 @@
     const firestore = firebase.firestore();
     try {
       baseRef = firestore.collection(path);
+      if (qs('orderBy')) {
+        const [orderBy, orderByDirection] = qs('orderBy').split(',');
+        baseRef = baseRef.orderBy(orderBy, orderByDirection || 'asc');
+      }
       baseType = 'collection';
       baseData = await baseRef.get();
       baseRef.onSnapshot(snapshot => {
